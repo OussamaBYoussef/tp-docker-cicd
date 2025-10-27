@@ -1,10 +1,11 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
-const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Database connection configuration
+const app = express();
+
+// Configuration de la base de données
 const pool = new Pool({
   host: process.env.DB_HOST || "db",
   port: process.env.DB_PORT || 5432,
@@ -14,24 +15,26 @@ const pool = new Pool({
 });
 
 // Middleware CORS
-app.use(cors({
-  origin: [
-    'http://localhost:8080',
-    'http://127.0.0.1:8080',
-    'http://localhost:*',
-    'http://backend'
-  ],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:8080",
+      "http://127.0.0.1:8080",
+      "http://localhost:*",
+      "http://backend",
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
 // Route: API status
 app.get("/api", (req, res) => {
   res.json({
     message: "Hello from Backend!",
     timestamp: new Date().toISOString(),
-    client: req.get('Origin') || 'unknown',
-    success: true
+    client: req.get("Origin") || "unknown",
+    success: true,
   });
 });
 
@@ -43,23 +46,28 @@ app.get("/db", async (req, res) => {
       message: "Data from Database",
       data: result.rows,
       timestamp: new Date().toISOString(),
-      success: true
+      success: true,
     });
   } catch (err) {
     res.status(500).json({
       message: "Database error",
       error: err.message,
-      success: false
+      success: false,
     });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Backend listening on port ${PORT}`);
-  console.log(`API endpoint: http://localhost:${PORT}/api`);
-  console.log(`DB endpoint: http://localhost:${PORT}/db`);
-});
+// === DÉMARRAGE CONDITIONNEL ===
+// Démarre le serveur UNIQUEMENT si le fichier est exécuté directement
+// (pas quand il est importé dans un test avec `require`)
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Backend listening on port ${PORT}`);
+    console.log(`API endpoint: http://localhost:${PORT}/api`);
+    console.log(`DB endpoint: http://localhost:${PORT}/db`);
+  });
+}
 
-
-module.exports = app; // Toujours exporter app
+// Export pour les tests unitaires (supertest)
+module.exports = app;
