@@ -1,4 +1,4 @@
-name: CI - Build Docker Images
+name: CI - Build & Test
 
 on:
   push:
@@ -7,34 +7,68 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
+    services:
+      # Optionnel : on pourrait lancer PostgreSQL ici, mais on utilise docker-compose
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: mydb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U admin"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      # 1. Récupérer le code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Configurer Docker Buildx (pour build multi-plateforme)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # 3. Build Backend
-      - name: Build Backend Image
+      # Build toutes les images
+      - name: Build Docker Images
         run: |
           docker build -t tp-backend ./backend
-
-      # 4. Build Frontend
-      - name: Build Frontend Image
-        run: |
           docker build -t tp-frontend ./frontend
-
-      # 5. Build Database
-      - name: Build Database Image
-        run: |
           docker build -t tp-db ./database
 
-      # 6. Lister les images
-      - name: List Docker Images
+      # Démarrer les services
+      - name: Start services
         run: |
-          docker images
+          docker-compose up -d
+
+      # Attendre que le backend soit prêt
+      - name: Wait for backend
+        run: |
+          for i in {1..30}; do
+            if curl -f http://localhost:3000/api >/dev/null 2>&1; then
+              echo "Backend est prêt !"
+              break
+            fi
+            echo "En attente du backend... ($i/30)"
+            sleep 2
+          done
+
+      # Tester l'API
+      - name: Test API Endpoint
+        run: |
+          curl -f http://localhost:3000/api || exit 1
+
+      # Tester la base de données
+      - name: Test DB Endpoint
+        run: |
+          curl -f http://localhost:3000/db || exit 1
+
+      # Afficher les logs en cas d'échec
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker-compose logs
