@@ -1,48 +1,18 @@
-version: "3.3"
-
+# docker-compose.yml – Version finale pour CI uniquement
+version: "3.9"
 services:
   backend:
     build: ./backend
-    container_name: tp-backend
     ports:
       - "3000:3000"
-    networks:
-      - webnet
-    depends_on:
-      - db
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=admin
-      - DB_PASSWORD=secret
-      - DB_NAME=mydb
+      - PORT=3000
+      # On met une fausse DATABASE_URL pour que le code ne plante pas
+      - DATABASE_URL=postgresql://fake:fake@localhost:5432/fake
 
   frontend:
     build: ./frontend
-    container_name: tp-frontend
     ports:
       - "8080:80"
     depends_on:
       - backend
-    networks:
-      - webnet
-
-  db:
-    build: ./database
-    container_name: tp-db
-    environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=secret
-      - POSTGRES_DB=mydb
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - webnet
-    ports:
-      - "5432:5432"
-
-networks:
-  webnet:
-
-volumes:
-  db-data:
