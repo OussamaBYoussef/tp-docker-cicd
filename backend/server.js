@@ -1,63 +1,72 @@
-const express = require("express"); // Framework web
-const cors = require("cors"); // Gestion CORS
-const { Pool } = require("pg"); // Client PostgreSQL
-
+// backend/server.js – Version finale pour Render + PostgreSQL externe
+const express = require('express');
+const { Pool } = require('pg');
 const app = express();
-const PORT = process.env.PORT || 3000; // Port configurable
+const PORT = process.env.PORT || 3000;
 
-// Database connection configuration
+app.use(express.json());
+
+// Connexion à la base PostgreSQL Render (ou locale si pas de variables)
 const pool = new Pool({
-    host: process.env.DB_HOST || "db",
-    port: process.env.DB_PORT || 5432,
-    user: process.env.DB_USER || "admin",
-    password: process.env.DB_PASSWORD || "secret",
-    database: process.env.DB_NAME || "mydb",
+  connectionString: process.env.DATABASE_URL || 
+    "postgresql://admin:secret@localhost:5432/mydb",
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// MIDDLEWARE CORS : Autorise les requêtes cross-origin
-app.use(cors({
-    origin: [
-        "http://localhost:8080",      // Frontend
-        "http://127.0.0.1:8080",     // Alternative
-        "http://localhost:*",        // Tous ports localhost (DEV uniquement)
-        "http://backend"             // Service Docker interne
-    ],
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type"]
-}));
+// Init DB au démarrage (une seule fois)
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100),
+        email VARCHAR(100) UNIQUE
+      )
+    `);
+    await pool.query(`
+      INSERT INTO users (name, email) 
+      VALUES ('Alice', 'alice@example.com'), ('Bob', 'bob@example.com')
+      ON CONFLICT (email) DO NOTHING
+    `);
+    console.log("Base de données initialisée");
+  } catch (err) {
+    console.error("Erreur init DB:", err.message);
+  }
+}
 
-// ROUTE API PRINCIPALE
-app.get("/api", (req, res) => {
-    res.json({
-        message: "Hello from Backend!",
-        timestamp: new Date().toISOString(),
-        client: req.get("Origin") || "unknown",
-        success: true
+// Routes
+app.get('/', (req, res) => {
+  res.json({ 
+    project: "TP CI/CD Complet", 
+    status: "Deployé sur Render + Vercel",
+    frontend: "https://ton-frontend.vercel.app"
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.json({ 
+    message: "Hello from Backend – TP CI/CD 2025 !",
+    deployed_on: "Render.com",
+    author: "Oussama Ben Youssef",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users');
+    res.json({ 
+      message: "Données depuis PostgreSQL Render", 
+      data: result.rows,
+      success: true 
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message, success: false });
+  }
 });
 
-// ROUTE DATABASE : Récupérer les données de la base
-app.get("/db", async (req, res) => {
-    try {
-        const result = await pool.query("SELECT * FROM users");
-        res.json({
-            message: "Data from Database",
-            data: result.rows,
-            timestamp: new Date().toISOString(),
-            success: true
-        });
-    } catch (err) {
-        res.status(500).json({
-            message: "Database error",
-            error: err.message,
-            success: false
-        });
-    }
-});
-
-// DÉMARRAGE SERVEUR
-app.listen(PORT, () => {
-    console.log(`Backend listening on port ${PORT}`);
-    console.log(`API endpoint: http://localhost:${PORT}/api`);
-    console.log(`DB endpoint: http://localhost:${PORT}/db`);
+// Démarrage
+app.listen(PORT, async () => {
+  console.log(`Backend sur le port ${PORT}`);
+  await initDB();
 });

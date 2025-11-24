@@ -1,0 +1,16 @@
+# backend/render.yaml
+services:
+  - type: web
+    name: tp-backend
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    rootDir: backend
+    autoDeploy: true
+
+databases:
+  - name: tp-db
+    plan: free
+    region: frankfurt
