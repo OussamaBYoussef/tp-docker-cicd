@@ -49,44 +49,51 @@
         <div id="db-response">Connexion en cours...</div>
     </div>
 
-    <script>
-        // URL AUTOMATIQUE : local ou production
-        const BACKEND_URL = 
-            window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app')
-                ? 'https://tp-docker-cicd-2.onrender.com'  // ← CHANGE ICI AVEC TON URL RENDER
-                : 'http://localhost:3000';
+  <script>
+// URL FIXE ET CORRECTE – marche à 100 % sur Vercel
+const BACKEND_URL = 'https://tp-docker-cicd-2.onrender.com';
 
-        console.log("Frontend → Backend URL :", BACKEND_URL);
+console.log('Frontend essaie de contacter →', BACKEND_URL);
 
-        async function fetchAPI() {
-            try {
-                const res = await fetch(`${BACKEND_URL}/api`, { method: 'GET' });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                document.getElementById('api-response').innerHTML = 
-                    `<span class="ok">BACKEND CONNECTÉ !</span><pre>${JSON.stringify(data, null, 2)}</pre>`;
-            } catch (err) {
-                document.getElementById('api-response').innerHTML = 
-                    `<span class="error">Backend non joignable</span><pre>URL: ${BACKEND_URL}/api\nErreur: ${err.message}</pre>`;
-            }
-        }
+async function loadData() {
+    // Test /api
+    try {
+        const res = await fetch(BACKEND_URL + '/api');
+        const data = await res.json();
+        document.getElementById('api-response').innerHTML = 
+            `<pre style="background:#0f08;color:#0f0;padding:15px;border-radius:8px">
+BACKEND CONNECTÉ !
+${JSON.stringify(data, null, 2)}
+            </pre>`;
+    } catch (e) {
+        document.getElementById('api-response').innerHTML = 
+            `<pre style="background:#400;color:#f008;padding:15px;border-radius:8px">
+ERREUR API :
+${e.message}
+URL : ${BACKEND_URL}/api
+            </pre>`;
+    }
 
-        async function fetchDB() {
-            try {
-                const res = await fetch(`${BACKEND_URL}/db`, { method: 'GET' });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                document.getElementById('db-response').innerHTML = 
-                    `<span class="ok">BASE DE DONNÉES CONNECTÉE !</span><pre>${JSON.stringify(data, null, 2)}</pre>`;
-            } catch (err) {
-                document.getElementById('db-response').innerHTML = 
-                    `<span class="error">DB non joignable</span><pre>URL: ${BACKEND_URL}/db\nErreur: ${err.message}</pre>`;
-            }
-        }
+    // Test /db
+    try {
+        const res = await fetch(BACKEND_URL + '/db');
+        const data = await res.json();
+        document.getElementById('db-response').innerHTML = 
+            `<pre style="background:#0048;color:#0ff8;padding:15px;border-radius:8px">
+BASE DE DONNÉES CONNECTÉE !
+${JSON.stringify(data, null, 2)}
+            </pre>`;
+    } catch (e) {
+        document.getElementById('db-response').innerHTML = 
+            `<pre style="background:#400;color:#f008;padding:15px;border-radius:8px">
+ERREUR DB :
+${e.message}
+            </pre>`;
+    }
+}
 
-        // Lance les deux appels
-        fetchAPI();
-        fetchDB();
-    </script>
+// Lance immédiatement
+loadData();
+</script>
 </body>
 </html>
