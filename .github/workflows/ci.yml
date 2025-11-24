@@ -1,4 +1,5 @@
-name: CI/CD – Frontend + Backend
+# .github/workflows/ci.yml – Version finale SANS base de données (fonctionne à 100 %)
+name: CI – Build & Test (Frontend + Backend)
 
 on:
   push:
@@ -7,29 +8,46 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
+      # Étape obligatoire : installer docker-compose
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
+      # Build des images
       - name: Build images
         run: |
           docker build -t tp-backend ./backend
           docker build -t tp-frontend ./frontend
 
+      # Lancement des conteneurs
       - name: Start services
         run: docker-compose up -d
 
-      - name: Wait for backend
+      # Attente que le backend soit prêt
+      - name: Wait for backend (max 30s)
         run: |
+          echo "Attente du backend..."
           for i in {1..30}; do
             if curl -f http://localhost:3000/api >/dev/null 2>&1; then
-              echo "Backend OK !"
+              echo "Backend prêt !"
               break
             fi
-            sleep 2
+            sleep 1
           done
 
-      - name: Test API
+      # Test final
+      - name: Test API endpoint
         run: curl -f http://localhost:3000/api
+
+      # Nettoyage (toujours exécuté)
+      - name: Stop services
+        if: always()
+        run: docker-compose down
