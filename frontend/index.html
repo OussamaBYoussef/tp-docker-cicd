@@ -1,39 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Frontend - TP Docker</title>
-  <link rel="stylesheet" href="style.css">
+  <title>TP CI/CD</title>
+  <style>body{font-family:Arial;text-align:center;padding:50px;background:#f0f8ff}</style>
 </head>
 <body>
-  <div class="container">
-    <h1>TP Docker Avancé</h1>
-    <h2>Frontend Statique</h2>
-    <div id="api-response">Loading API data...</div>
-    <div id="db-response">Loading Database data...</div>
-  </div>
+  <h1>TP CI/CD – Frontend + Backend</h1>
+  <p id="result">Chargement...</p>
 
   <script>
-    async function fetchData() {
-      try {
-        // Fetch API status
-        const apiResponse = await fetch('http://localhost:3000/api');
-        if (!apiResponse.ok) throw new Error('API request failed');
-        const apiData = await apiResponse.json();
-        document.getElementById('api-response').innerText = JSON.stringify(apiData, null, 2);
+    const API_URL = window.location.hostname.includes('vercel') 
+      ? 'https://tp-cicd-backend.onrender.com' 
+      : 'http://localhost:3000';
 
-        // Fetch database data
-        const dbResponse = await fetch('http://localhost:3000/db');
-        if (!dbResponse.ok) throw new Error('Database request failed');
-        const dbData = await dbResponse.json();
-        document.getElementById('db-response').innerText = JSON.stringify(dbData, null, 2);
-      } catch (error) {
-        document.getElementById('api-response').innerText = `Error: ${error.message}`;
-        document.getElementById('db-response').innerText = `Error: ${error.message}`;
-      }
-    }
-    setTimeout(fetchData, 1000);
+    fetch(`${API_URL}/api`)
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('result').innerHTML = `
+          <pre style="background:#e0ffe0;padding:20px;border-radius:10px">
+${JSON.stringify(data, null, 2)}
+          </pre>
+        `;
+      })
+      .catch(() => {
+        document.getElementById('result').textContent = "Backend non joignable";
+      });
   </script>
 </body>
 </html>

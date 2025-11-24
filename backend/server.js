@@ -1,63 +1,20 @@
-const express = require("express"); // Framework web
-const cors = require("cors"); // Gestion CORS
-const { Pool } = require("pg"); // Client PostgreSQL
-
+const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000; // Port configurable
+const PORT = process.env.PORT || 3000;
 
-// Database connection configuration
-const pool = new Pool({
-    host: process.env.DB_HOST || "db",
-    port: process.env.DB_PORT || 5432,
-    user: process.env.DB_USER || "admin",
-    password: process.env.DB_PASSWORD || "secret",
-    database: process.env.DB_NAME || "mydb",
+app.get('/api', (req, res) => {
+  res.json({
+    message: "Hello from Backend – TP CI/CD 2025 !",
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    author: "It's me"
+  });
 });
 
-// MIDDLEWARE CORS : Autorise les requêtes cross-origin
-app.use(cors({
-    origin: [
-        "http://localhost:8080",      // Frontend
-        "http://127.0.0.1:8080",     // Alternative
-        "http://localhost:*",        // Tous ports localhost (DEV uniquement)
-        "http://backend"             // Service Docker interne
-    ],
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type"]
-}));
-
-// ROUTE API PRINCIPALE
-app.get("/api", (req, res) => {
-    res.json({
-        message: "Hello from Backend!",
-        timestamp: new Date().toISOString(),
-        client: req.get("Origin") || "unknown",
-        success: true
-    });
+app.get('/', (req, res) => {
+  res.json({ project: "TP CI/CD – Frontend + Backend", status: "running" });
 });
 
-// ROUTE DATABASE : Récupérer les données de la base
-app.get("/db", async (req, res) => {
-    try {
-        const result = await pool.query("SELECT * FROM users");
-        res.json({
-            message: "Data from Database",
-            data: result.rows,
-            timestamp: new Date().toISOString(),
-            success: true
-        });
-    } catch (err) {
-        res.status(500).json({
-            message: "Database error",
-            error: err.message,
-            success: false
-        });
-    }
-});
-
-// DÉMARRAGE SERVEUR
 app.listen(PORT, () => {
-    console.log(`Backend listening on port ${PORT}`);
-    console.log(`API endpoint: http://localhost:${PORT}/api`);
-    console.log(`DB endpoint: http://localhost:${PORT}/db`);
+  console.log(`Backend running on port ${PORT}`);
 });
