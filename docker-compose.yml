@@ -7,8 +7,15 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - app-network
-    restart: unless-stopped
+      - webnet
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=secret
+      - DB_NAME=mydb
 
   frontend:
     build: ./frontend
@@ -18,9 +25,24 @@ services:
     depends_on:
       - backend
     networks:
-      - app-network
-    restart: unless-stopped
+      - webnet
+
+  db:
+    build: ./database
+    container_name: tp-db
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=mydb
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - webnet
+    ports:
+      - "5432:5432"
 
 networks:
-  app-network:
-    driver: bridge
+  webnet:
+
+volumes:
+  db-data:
